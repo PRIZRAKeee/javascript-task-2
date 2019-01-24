@@ -15,7 +15,7 @@ function checkValid(phone, name, email) {
     const phonePattern = new RegExp('^\\d{10}$');
     const phoneValid = typeof phone === 'string' && phonePattern.test(phone);
     const nameValid = typeof name === 'string' && name !== '';
-    const emailValid = (email !== undefined) ? typeof email === 'string' : true;
+    const emailValid = email !== undefined ? typeof email === 'string' : true;
 
     return phoneValid && nameValid && emailValid;
 }
@@ -31,7 +31,7 @@ function add(phone, name, email) {
     if (checkValid(phone, name, email) && !(phone.replace(/[^0-9]+/, '') in phoneBook)) {
         phoneBook[phone] = [name];
         if (email) {
-            phoneBook[phone][1] = email;
+            phoneBook[phone].push(email);
         }
 
         return true;
@@ -73,15 +73,15 @@ function findAndRemove(query) {
 
         return count;
     }
-    Object.keys(phoneBook).map(objectKey => {
-        const phone = objectKey.indexOf(query);
-        const name = phoneBook[objectKey][0].indexOf(query);
+    Object.keys(phoneBook).map(numberPhone => {
+        const phone = numberPhone.indexOf(query);
+        const name = phoneBook[numberPhone][0].indexOf(query);
         let email = -1;
-        if (phoneBook[objectKey][1]) {
-            email = phoneBook[objectKey][1].indexOf(query);
+        if (phoneBook[numberPhone][1]) {
+            email = phoneBook[numberPhone][1].indexOf(query);
         }
         if (phone !== -1 || name !== -1 || email !== -1 || query === '*') {
-            delete phoneBook[objectKey];
+            delete phoneBook[numberPhone];
             count++;
         }
 
@@ -93,20 +93,25 @@ function findAndRemove(query) {
 }
 
 function findQuery(key, name, email, query) {
-    const checkK = key.indexOf(query);
-    const checkN = name.indexOf(query);
-    let checkE = email;
-    if (email) {
-        checkE = email.indexOf(query);
-    } else {
-        checkE = -1;
-    }
-    if (checkK !== -1 || checkN !== -1 || checkE !== -1 || query === '*') {
+    const checkPhone = key.indexOf(query);
+    const checkName = name.indexOf(query);
+    const checkEmail = email ? email.indexOf(query) : -1;
+    if (checkPhone !== -1 || checkName !== -1 || checkEmail !== -1) {
 
         return true;
     }
 
     return false;
+}
+
+function formattingPhone(number) {
+    let phone = [];
+    phone[0] = '+7 (' + number.slice(0, 3) + ') ';
+    phone[1] = number.slice(3, 6) + '-';
+    phone[2] = number.slice(6, 8) + '-';
+    phone[3] = number.slice(8);
+
+    return phone[0] + phone[1] + phone[2] + phone[3];
 }
 
 /**
@@ -116,7 +121,7 @@ function findQuery(key, name, email, query) {
  */
 function find(query) {
     let listQuery = [];
-    if (!query || query === '' || query === undefined || typeof query !== 'string') {
+    if (!query || query === '' || typeof query !== 'string') {
 
         return listQuery;
     }
@@ -124,14 +129,10 @@ function find(query) {
         const number = objectKey;
         const name = phoneBook[objectKey][0];
         const email = phoneBook[objectKey][1];
-        if (findQuery(number, name, email, query)) {
-            const phone = [];
-            phone[0] = '+7 (' + number.slice(0, 3) + ') ';
-            phone[1] = number.slice(3, 6) + '-';
-            phone[2] = number.slice(6, 8) + '-';
-            phone[3] = number.slice(8);
+        if (query === '*' || findQuery(number, name, email, query)) {
+            const phone = formattingPhone(number);
             const emailTrue = (email !== undefined && email !== '') ? ', ' + email : '';
-            let item = name + ', ' + phone[0] + phone[1] + phone[2] + phone[3] + emailTrue;
+            let item = name + ', ' + phone + emailTrue;
             listQuery.push(item);
         }
 
